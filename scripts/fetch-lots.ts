@@ -499,5 +499,11 @@ async function main(): Promise<void> {
 
 main().catch((error: unknown) => {
   console.error(error)
+  console.error(`
+Не удалось скачать лоты с torgi.gov.ru.
+Частые причины:
+  • сайт недоступен из текущей сети / VPN (проверь в браузере https://torgi.gov.ru)
+  • GitHub-hosted runner за рубежом — нужен HTTPS_PROXY или self-hosted runner в РФ
+`)
   process.exit(1)
 })

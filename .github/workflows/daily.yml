@@ -13,12 +13,16 @@ concurrency:
   group: daily-lots
   cancel-in-progress: false
 
+# По умолчанию ubuntu (GitHub). torgi.gov.ru с зарубежных IP часто недоступен.
+# Варианты:
+# 1) Settings → Secrets → HTTPS_PROXY = рабочий HTTP(S) прокси с доступом в РФ
+# 2) Settings → Variables → ACTIONS_RUNNER = self-hosted  (+ runner на Mac)
 jobs:
   update:
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.ACTIONS_RUNNER || 'ubuntu-latest' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -26,15 +30,19 @@ jobs:
           version: 10
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: 22
+          node-version: 24
           cache: pnpm
 
       - name: Install
         run: pnpm install --frozen-lockfile
 
       - name: Fetch lots
+        env:
+          HTTPS_PROXY: ${{ secrets.HTTPS_PROXY }}
+          HTTP_PROXY: ${{ secrets.HTTPS_PROXY }}
+          NODE_USE_ENV_PROXY: '1'
         run: pnpm fetch-lots
 
       - name: Notify Telegram

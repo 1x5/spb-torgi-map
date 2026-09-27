@@ -63,7 +63,28 @@ Workflow `Daily lots` в 09:00 МСК (`0 6 * * *` UTC).
 Первый успешный прогон только фиксирует baseline (без спама «все лоты новые»).  
 Дальше пуш приходит **только если появились новые лоты**. Чтобы слать каждый день даже при нуле: секрет/env `NOTIFY_ALWAYS=1`.
 
-> Если Actions не достучится до `torgi.gov.ru` (таймаут/блок), workflow упадёт на шаге Fetch — тогда `pnpm fetch-lots` локально и закоммить `public/data/lots.json`, либо позже добавим прокси.
+### Если Daily lots падает на Fetch (таймаут torgi.gov.ru)
+
+Это ожидаемо: `torgi.gov.ru` часто **не открывается** с GitHub-hosted runners (и с некоторых VPN).
+
+Сначала проверь в браузере: https://torgi.gov.ru — страница должна открываться.
+
+Дальше один из вариантов:
+
+1. **Локально** (когда сайт открывается у тебя):
+   ```bash
+   pnpm fetch-lots
+   pnpm notify
+   git add public/data/lots.json data/*.json
+   git commit -m "chore: update lots"
+   git push
+   ```
+2. **Прокси**: Secrets → `HTTPS_PROXY` = `http://user:pass@host:port` (прокси с доступом к .gov.ru)
+3. **Self-hosted runner на Mac**:  
+   Settings → Variables → Actions → `ACTIONS_RUNNER` = `self-hosted`  
+   затем [добавь runner](https://github.com/1x5/spb-torgi-map/settings/actions/runners/new) и держи Mac включённым к 09:00
+
+Предупреждения про Node 20 / ubuntu-latest в логе — не причина падения.
 
 ## Структура
 
