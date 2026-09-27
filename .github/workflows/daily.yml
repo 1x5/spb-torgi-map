@@ -1,0 +1,57 @@
+name: Daily lots
+
+on:
+  schedule:
+    # 09:00 Europe/Moscow (06:00 UTC)
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: daily-lots
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Fetch lots
+        run: pnpm fetch-lots
+
+      - name: Notify Telegram
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          MAP_URL: ${{ secrets.MAP_URL }}
+        run: pnpm notify
+
+      - name: Commit data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/data/lots.json data/last-run.json data/previous-ids.json
+          if git diff --staged --quiet; then
+            echo "No data changes"
+          else
+            git commit -m "chore: update SPb lots $(date -u +%Y-%m-%d)"
+            git push
+          fi
